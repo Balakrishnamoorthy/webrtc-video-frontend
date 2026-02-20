@@ -78,9 +78,19 @@ VITE_SOCKET_URL=https://your-render-backend.onrender.com
 
 ## 👨‍💻 Author
 
-![Profile](YOUR_PROFILE_IMAGE_LINK)
+<p align="center">
+  <img src="https://github.com/Balakrishnamoorthy.png" width="150" style="border-radius:50%" />
+</p>
 
-**Bala**
+<p align="center">
+  <b>Balakrishnamoorthy</b>
+</p>
 
-GitHub: https://github.com/Balakrishnamoorthy 
-Portfolio: https://balakrishnamoorthy-portfolio.netlify.app/
+<p align="center">
+<a href="https://github.com/Balakrishnamoorthy">
+    <img src="https://img.shields.io/badge/GitHub-000?style=for-the-badge&logo=github" />
+  </a>
+  <a href="https://balakrishnamoorthy-portfolio.netlify.app/">
+    <img src="https://img.shields.io/badge/Portfolio-111?style=for-the-badge" />
+  </a>
+</p>
