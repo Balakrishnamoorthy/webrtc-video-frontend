@@ -1,6 +1,5 @@
 import React, { useRef, useState, useEffect } from "react";
 import { io } from "socket.io-client";
-import { v4 as uuidv4 } from "uuid";
 import {
     Mic,
     MicOff,
@@ -122,8 +121,16 @@ const VideoCall = () => {
         });
     };
 
+    const generateRoomId = () => {
+        const part1 = Math.floor(100 + Math.random() * 900);     // 3 digits
+        const part2 = Math.floor(1000 + Math.random() * 9000);   // 4 digits
+        const part3 = Math.floor(100 + Math.random() * 900);     // 3 digits
+
+        return `${part1}-${part2}-${part3}`;
+    };
+
     const createRoom = async () => {
-        const newRoom = uuidv4();
+        const newRoom = generateRoomId();
         setRoomId(newRoom);
         createConnection(newRoom, true);
     };
