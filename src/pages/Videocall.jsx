@@ -89,17 +89,18 @@ const VideoCall = () => {
         socket.emit("join-room", room);
 
         socket.on("ready", async () => {
-            if (host) {
-                await peerConnection.current.setLocalDescription(
-                    await peerConnection.current.createOffer()
-                );
+            if (host && peerConnection.current.signalingState === "stable") {
+                const offer = await peerConnection.current.createOffer();
+                await peerConnection.current.setLocalDescription(offer);
 
                 socket.emit("offer", {
                     roomId: room,
-                    offer: peerConnection.current.localDescription,
+                    offer: offer,
                 });
             }
         });
+
+        if (peerConnection.current.signalingState !== "stable") return;
 
         socket.on("offer", async (offer) => {
             await peerConnection.current.setRemoteDescription(offer);
@@ -165,6 +166,13 @@ const VideoCall = () => {
         // Clear videos
         if (localVideo.current) localVideo.current.srcObject = null;
         if (remoteVideo.current) remoteVideo.current.srcObject = null;
+
+        if (peerConnection.current) {
+            peerConnection.current.ontrack = null;
+            peerConnection.current.onicecandidate = null;
+            peerConnection.current.close();
+            peerConnection.current = null;
+        }
 
         socket.emit("leave-room", roomId);
 
