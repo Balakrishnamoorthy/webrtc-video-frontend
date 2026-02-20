@@ -1,0 +1,199 @@
+.container {
+    height: 100vh;
+    width: 100%;
+    background: #0f172a;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-family: "Inter", sans-serif;
+}
+
+/* ---------- LOBBY ---------- */
+
+.lobby {
+    text-align: center;
+    background: #1e293b;
+    padding: 40px;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 420px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+}
+
+.title {
+    margin-bottom: 25px;
+    font-weight: 600;
+}
+
+.primaryBtn {
+    width: 100%;
+    padding: 12px;
+    border-radius: 10px;
+    border: none;
+    background: #3b82f6;
+    color: white;
+    font-weight: 500;
+    cursor: pointer;
+    margin-bottom: 20px;
+    transition: 0.3s;
+}
+
+.primaryBtn:hover {
+    background: #2563eb;
+}
+
+.joinSection {
+    display: flex;
+    gap: 10px;
+}
+
+.input {
+    flex: 1;
+    padding: 10px;
+    border-radius: 8px;
+    border: none;
+    outline: none;
+}
+
+.secondaryBtn {
+    padding: 10px 16px;
+    border-radius: 8px;
+    border: none;
+    background: #334155;
+    color: white;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.secondaryBtn:hover {
+    background: #475569;
+}
+
+/* ---------- CALL SCREEN ---------- */
+
+.callWrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: black;
+    overflow: hidden;
+}
+
+.remoteVideo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.localVideo {
+    position: absolute;
+    bottom: 90px;
+    right: 20px;
+    width: 200px;
+    height: 130px;
+    border-radius: 12px;
+    object-fit: cover;
+    border: 2px solid white;
+    background: black;
+}
+
+/* ---------- CONTROLS ---------- */
+
+.controls {
+    position: absolute;
+    bottom: 20px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+}
+
+.controlBtn {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    transition: 0.3s;
+}
+
+.controlBtn:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+.active {
+    background: #ef4444;
+}
+
+.endCall {
+    background: #dc2626;
+}
+
+.endCall:hover {
+    background: #b91c1c;
+}
+
+/* ---------- MEETING LINK BAR ---------- */
+
+.meetingBar {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(30, 41, 59, 0.8);
+    backdrop-filter: blur(10px);
+    padding: 8px 14px;
+    border-radius: 30px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    max-width: 90%;
+    z-index: 10;
+}
+
+.meetingText {
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.copyBtn {
+    background: rgba(255, 255, 255, 0.15);
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: white;
+    transition: 0.3s;
+}
+
+.copyBtn:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* ---------- RESPONSIVE ---------- */
+
+@media (max-width: 768px) {
+    .localVideo {
+        width: 120px;
+        height: 90px;
+        bottom: 100px;
+    }
+
+    .controlBtn {
+        width: 45px;
+        height: 45px;
+    }
+}
