@@ -1,14 +1,6 @@
 import React, { useRef, useState, useEffect } from "react";
 import { io } from "socket.io-client";
-import {
-    Mic,
-    MicOff,
-    Video,
-    VideoOff,
-    PhoneOff,
-    Copy,
-    Check
-} from "lucide-react";
+import { Mic, MicOff, Video, VideoOff, PhoneOff, Copy, Check, Monitor, MonitorOff, MessageCircle } from "lucide-react";
 
 import styles from "../styles/Videocall.module.css";
 
@@ -29,6 +21,14 @@ const VideoCall = () => {
     const [roomId, setRoomId] = useState("");
     const [inputRoom, setInputRoom] = useState("");
     const [isHost, setIsHost] = useState(false);
+
+    const [isScreenSharing, setIsScreenSharing] = useState(false);
+    const screenStream = useRef(null);
+
+    const dataChannel = useRef(null);
+    const [messages, setMessages] = useState([]);
+    const [chatInput, setChatInput] = useState("");
+    const [isChatOpen, setIsChatOpen] = useState(false);
 
     useEffect(() => {
         const handleVisibilityChange = () => {
@@ -67,6 +67,22 @@ const VideoCall = () => {
         peerConnection.current = new RTCPeerConnection({
             iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
         });
+
+        if (host) {
+            dataChannel.current = peerConnection.current.createDataChannel("chat");
+
+            dataChannel.current.onmessage = (event) => {
+                setMessages((prev) => [...prev, { sender: "remote", text: event.data }]);
+            };
+        }
+
+        peerConnection.current.ondatachannel = (event) => {
+            dataChannel.current = event.channel;
+
+            dataChannel.current.onmessage = (event) => {
+                setMessages((prev) => [...prev, { sender: "remote", text: event.data }]);
+            };
+        };
 
         stream.getTracks().forEach((track) => {
             peerConnection.current.addTrack(track, stream);
@@ -204,6 +220,73 @@ const VideoCall = () => {
         }
     };
 
+    const toggleScreenShare = async () => {
+        if (!peerConnection.current) return;
+
+        if (!isScreenSharing) {
+            try {
+                const displayStream = await navigator.mediaDevices.getDisplayMedia({
+                    video: true,
+                });
+
+                const screenTrack = displayStream.getVideoTracks()[0];
+
+                const sender = peerConnection.current
+                    .getSenders()
+                    .find((s) => s.track.kind === "video");
+
+                if (sender) {
+                    sender.replaceTrack(screenTrack);
+                }
+
+                localVideo.current.srcObject = displayStream;
+                screenStream.current = displayStream;
+                setIsScreenSharing(true);
+
+                // When user clicks "Stop Sharing" from browser popup
+                screenTrack.onended = () => {
+                    stopScreenShare();
+                };
+
+            } catch (err) {
+                console.error("Screen share error:", err);
+            }
+        } else {
+            stopScreenShare();
+        }
+    };
+
+    const stopScreenShare = async () => {
+        if (!localStream.current) return;
+
+        const cameraTrack = localStream.current.getVideoTracks()[0];
+
+        const sender = peerConnection.current
+            .getSenders()
+            .find((s) => s.track.kind === "video");
+
+        if (sender) {
+            sender.replaceTrack(cameraTrack);
+        }
+
+        localVideo.current.srcObject = localStream.current;
+
+        if (screenStream.current) {
+            screenStream.current.getTracks().forEach((track) => track.stop());
+        }
+
+        setIsScreenSharing(false);
+    };
+
+    const sendMessage = () => {
+        if (!chatInput.trim() || !dataChannel.current) return;
+
+        dataChannel.current.send(chatInput);
+
+        setMessages((prev) => [...prev, { sender: "me", text: chatInput }]);
+        setChatInput("");
+    };
+
     return (
         <div className={styles.container}>
 
@@ -276,12 +359,58 @@ const VideoCall = () => {
                         </button>
 
                         <button
+                            onClick={toggleScreenShare}
+                            className={`${styles.controlBtn} ${isScreenSharing ? styles.active : ""}`}
+                        >
+                            {isScreenSharing ? <MonitorOff size={22} /> : <Monitor size={22} />}
+                        </button>
+
+                        <button
+                            onClick={() => setIsChatOpen(!isChatOpen)}
+                            className={styles.controlBtn}
+                        >
+                            <MessageCircle size={22} />
+                        </button>
+
+                        <button
                             onClick={endCall}
                             className={`${styles.controlBtn} ${styles.endCall}`}
                         >
                             <PhoneOff size={22} />
                         </button>
 
+                    </div>
+                </div>
+            )}
+
+            {isChatOpen && (
+                <div className={styles.chatPanel}>
+                    <div className={styles.chatMessages}>
+                        {messages.map((msg, index) => (
+                            <div
+                                key={index}
+                                className={
+                                    msg.sender === "me"
+                                        ? styles.myMessage
+                                        : styles.remoteMessage
+                                }
+                            >
+                                {msg.text}
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className={styles.chatInputArea}>
+                        <input
+                            value={chatInput}
+                            onChange={(e) => setChatInput(e.target.value)}
+                            placeholder="Type a message..."
+                            className={styles.chatInput}
+                            onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+                        />
+                        <button onClick={sendMessage} className={styles.sendBtn}>
+                            Send
+                        </button>
                     </div>
                 </div>
             )}

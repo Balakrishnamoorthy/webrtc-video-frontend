@@ -183,6 +183,67 @@
     background: rgba(255, 255, 255, 0.3);
 }
 
+.chatPanel {
+    position: absolute;
+    right: 20px;
+    bottom: 100px;
+    width: 280px;
+    height: 350px;
+    background: #1e1e1e;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.chatMessages {
+    flex: 1;
+    padding: 10px;
+    overflow-y: auto;
+}
+
+.myMessage {
+    background: #4f46e5;
+    color: white;
+    padding: 6px 10px;
+    border-radius: 8px;
+    margin-bottom: 6px;
+    align-self: flex-end;
+}
+
+.remoteMessage {
+    background: #333;
+    color: white;
+    padding: 6px 10px;
+    border-radius: 8px;
+    margin-bottom: 6px;
+    align-self: flex-start;
+}
+
+.chatInputArea {
+    display: flex;
+    padding: 8px;
+    background: #111;
+}
+
+.chatInput {
+    flex: 1;
+    padding: 6px;
+    border-radius: 6px;
+    border: none;
+    outline: none;
+}
+
+.sendBtn {
+    margin-left: 6px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: none;
+    background: #4f46e5;
+    color: white;
+    cursor: pointer;
+}
+
 /* ---------- RESPONSIVE ---------- */
 
 @media (max-width: 768px) {
