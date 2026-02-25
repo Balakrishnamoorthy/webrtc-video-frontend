@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from "react";
 import { io } from "socket.io-client";
-import { Mic, MicOff, Video, VideoOff, PhoneOff, Copy, Check, Monitor, MonitorOff, MessageCircle } from "lucide-react";
+import { Mic, MicOff, Video, VideoOff, PhoneOff, Copy, Check, Monitor, MonitorOff, MessageCircle, Send, Paperclip } from "lucide-react";
+import { Download, File as FileIcon } from "lucide-react";
 
 import styles from "../styles/Videocall.module.css";
 
@@ -29,6 +30,10 @@ const VideoCall = () => {
     const [messages, setMessages] = useState([]);
     const [chatInput, setChatInput] = useState("");
     const [isChatOpen, setIsChatOpen] = useState(false);
+
+    const fileInputRef = useRef(null);
+    const receivedBuffers = useRef([]);
+    const receivedFileInfo = useRef(null);
 
     useEffect(() => {
         const handleVisibilityChange = () => {
@@ -71,16 +76,94 @@ const VideoCall = () => {
         if (host) {
             dataChannel.current = peerConnection.current.createDataChannel("chat");
 
-            dataChannel.current.onmessage = (event) => {
-                setMessages((prev) => [...prev, { sender: "remote", text: event.data }]);
+            dataChannel.current.onmessage = async (event) => {
+                if (typeof event.data === "string") {
+                    const parsed = JSON.parse(event.data);
+
+                    if (parsed.type === "chat") {
+                        setMessages((prev) => [
+                            ...prev,
+                            { type: "chat", sender: "remote", text: parsed.text },
+                        ]);
+                    }
+
+                    if (parsed.type === "file-info") {
+                        receivedFileInfo.current = parsed;
+                        receivedBuffers.current = [];
+                    }
+                } else {
+                    // Binary chunk
+                    receivedBuffers.current.push(event.data);
+
+                    const totalSize = receivedBuffers.current.reduce(
+                        (acc, chunk) => acc + chunk.byteLength,
+                        0
+                    );
+
+                    if (totalSize >= receivedFileInfo.current.size) {
+                        const blob = new Blob(receivedBuffers.current);
+
+                        setMessages((prev) => [
+                            ...prev,
+                            {
+                                type: "file",
+                                sender: "remote",
+                                name: receivedFileInfo.current.name,
+                                size: receivedFileInfo.current.size,
+                                blob: blob,
+                            },
+                        ]);
+
+                        receivedBuffers.current = [];
+                    }
+                }
             };
         }
 
         peerConnection.current.ondatachannel = (event) => {
             dataChannel.current = event.channel;
 
-            dataChannel.current.onmessage = (event) => {
-                setMessages((prev) => [...prev, { sender: "remote", text: event.data }]);
+            dataChannel.current.onmessage = async (event) => {
+                if (typeof event.data === "string") {
+                    const parsed = JSON.parse(event.data);
+
+                    if (parsed.type === "chat") {
+                        setMessages((prev) => [
+                            ...prev,
+                            { type: "chat", sender: "remote", text: parsed.text },
+                        ]);
+                    }
+
+                    if (parsed.type === "file-info") {
+                        receivedFileInfo.current = parsed;
+                        receivedBuffers.current = [];
+                    }
+                } else {
+                    // Binary chunk
+                    receivedBuffers.current.push(event.data);
+
+                    const totalSize = receivedBuffers.current.reduce(
+                        (acc, chunk) => acc + chunk.byteLength,
+                        0
+                    );
+
+                    if (totalSize >= receivedFileInfo.current.size) {
+                        const blob = new Blob(receivedBuffers.current);
+
+                        setMessages((prev) => [
+                            ...prev,
+                            {
+                                type: "file",
+                                sender: "remote",
+                                name: receivedFileInfo.current.name,
+                                size: receivedFileInfo.current.size,
+                                blob: blob,
+                            },
+                        ]);
+
+                        receivedBuffers.current = [];
+                    }
+                }
             };
         };
 
@@ -204,6 +287,9 @@ const VideoCall = () => {
         setInputRoom("");
         setIsMuted(false);
         setIsCameraOff(false);
+        setIsChatOpen(false);
+        setMessages([]);
+
     };
 
     const copyToClipboard = async () => {
@@ -281,10 +367,50 @@ const VideoCall = () => {
     const sendMessage = () => {
         if (!chatInput.trim() || !dataChannel.current) return;
 
-        dataChannel.current.send(chatInput);
+        dataChannel.current.send(
+            JSON.stringify({
+                type: "chat",
+                text: chatInput,
+            })
+        );
 
-        setMessages((prev) => [...prev, { sender: "me", text: chatInput }]);
+        setMessages((prev) => [...prev, { type: "chat", sender: "me", text: chatInput }]);
         setChatInput("");
+    };
+
+    const sendFile = async (file) => {
+        if (!dataChannel.current) return;
+
+        dataChannel.current.send(
+            JSON.stringify({
+                type: "file-info",
+                name: file.name,
+                size: file.size,
+            })
+        );
+
+        const chunkSize = 16 * 1024;
+        let offset = 0;
+
+        while (offset < file.size) {
+            const slice = file.slice(offset, offset + chunkSize);
+            const buffer = await slice.arrayBuffer();
+
+            dataChannel.current.send(buffer);
+            offset += chunkSize;
+        }
+
+        // Add file message to sender chat
+        setMessages((prev) => [
+            ...prev,
+            {
+                type: "file",
+                sender: "me",
+                name: file.name,
+                size: file.size,
+                blob: file,
+            },
+        ]);
     };
 
     return (
@@ -395,7 +521,34 @@ const VideoCall = () => {
                                         : styles.remoteMessage
                                 }
                             >
-                                {msg.text}
+                                {msg.type === "chat" && <span>{msg.text}</span>}
+
+                                {msg.type === "file" && (
+                                    <div className={styles.fileMessage}>
+                                        <div className={styles.fileHeader}>
+                                            <FileIcon size={16} />
+                                            <span className={styles.fileName}>{msg.name}</span>
+                                        </div>
+
+                                        <div className={styles.fileSize}>
+                                            {(msg.size / 1024).toFixed(1)} KB
+                                        </div>
+
+                                        <button
+                                            className={styles.downloadBtn}
+                                            onClick={() => {
+                                                const url = URL.createObjectURL(msg.blob);
+                                                const a = document.createElement("a");
+                                                a.href = url;
+                                                a.download = msg.name;
+                                                a.click();
+                                            }}
+                                        >
+                                            <Download size={16} />
+                                            Download
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         ))}
                     </div>
@@ -408,8 +561,24 @@ const VideoCall = () => {
                             className={styles.chatInput}
                             onKeyDown={(e) => e.key === "Enter" && sendMessage()}
                         />
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            style={{ display: "none" }}
+                            onChange={(e) => {
+                                const file = e.target.files[0];
+                                if (file) sendFile(file);
+                            }}
+                        />
+
+                        <button
+                            onClick={() => fileInputRef.current.click()}
+                            className={styles.sendBtn}
+                        >
+                            <Paperclip size={18} />
+                        </button>
                         <button onClick={sendMessage} className={styles.sendBtn}>
-                            Send
+                            <Send size={18} />
                         </button>
                     </div>
                 </div>
